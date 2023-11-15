@@ -4,6 +4,9 @@ const RENDER_EVENT = 'render-todo';
 // array ini akan di isi oleh todoObject yang berisi inputan dari user
 const todos = [];
 
+const SAVED_EVENT = 'saved-todo';
+const STORAGE_KEY = 'TODO_APPS';
+
 //deklarasi
 function addTaskCompleted(todoId) {
     // mengembalikan nilai todoItem jika true;
@@ -15,6 +18,7 @@ function addTaskCompleted(todoId) {
     // jika todoitem isCompleted berinilai true maka pindahkan.
     todoTarget.isCompleted = true;
     document.dispatchEvent(new Event(RENDER_EVENT));
+    saveData();
 }
 
 // mencari todo dengan id yang sama.
@@ -42,6 +46,7 @@ function undoTaskFromCompleted(todoId) {
 
     todoTarget.isCompleted = false;
     document.dispatchEvent(new Event(RENDER_EVENT));
+    saveData();
 }
 
 function removeTaskFromCompleted(todoId) {
@@ -51,12 +56,23 @@ function removeTaskFromCompleted(todoId) {
 
     todos.splice(todoTarget, 1);
     document.dispatchEvent(new Event(RENDER_EVENT));
+    saveData();
+}
+function isStorageExist() {
+    if (typeof (Storage) === undefined) {
+        alert('Browser kamu tidak mendukung local storage');
+        return false;
+    }
+    return true;
 }
 
 // event untuk memmuat seluruh document html mejadi DOM yang utuh.
 document.addEventListener('DOMContentLoaded', function () {
     // Mendapatkan element form dengan ID form.
     const submitForm = document.getElementById('form');
+    if (isStorageExist()) {
+        loadDataFromStorage();
+    }
     // Menerapkan event Submit pada form (yang akan terjadi ketika tombol submit pada form ditekan.)
     submitForm.addEventListener('submit', function (event) {
         // Mencegah hilangnya data saat web memuat ulang.
@@ -80,11 +96,25 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // event ini yang akan menampilkan segala yang di buat.
         document.dispatchEvent(new Event(RENDER_EVENT));
+        saveData();
     }
 
     // ini adalah deklarasi fungsi yang membuat Id unik(mengkonversikan date menajdi angka unik dengan [+])
     function generateId() {
         return +new Date();
+    }
+
+    function loadDataFromStorage() {
+        const serializedData = localStorage.getItem(STORAGE_KEY);
+        let data = JSON.parse(serializedData);
+
+        if (data !== null) {
+            for (const todo of data) {
+                todos.push(todo);
+            }
+        }
+
+        document.dispatchEvent(new Event(RENDER_EVENT));
     }
 
     // deklarasi dari function todoObject dimana dia akan mengembalikan seluruh nilai dari parameter todoObject.
@@ -163,3 +193,16 @@ function makeTodo(todoObject) {
     }
     return container;
 }
+
+document.addEventListener(SAVED_EVENT, function () {
+    console.log(localStorage.getItem(STORAGE_KEY));
+});
+
+function saveData() {
+    if (isStorageExist()) {
+        const parsed = JSON.stringify(todos);
+        localStorage.setItem(STORAGE_KEY, parsed);
+        document.dispatchEvent(new Event(SAVED_EVENT));
+    }
+}
+
